@@ -1,1 +1,1 @@
-# alexa-smarthoteliot
+# alexa-smarthoteliot for FYP
