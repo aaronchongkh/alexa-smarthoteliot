@@ -1,3 +1,13 @@
+// exports.handler = async (event) => {
+//     // TODO implement
+//     const response = {
+//         statusCode: 200,
+//         body: JSON.stringify('Hello from Lambda!'),
+//     };
+//     return response;
+// };
+
+
 // Lambda Function code for Alexa.
 // Paste this into your index.js file. 
 
@@ -6,11 +16,12 @@ const https = require("https");
 let AWS = require("aws-sdk");
 
 const config = {};
-config.IOT_BROKER_ENDPOINT = "<Your Thing HTTP Reset Endpoint>"; // also called the REST API endpoint
-config.IOT_BROKER_REGION = "eu-west-1"; // eu-west-1 corresponds to the Ireland Region.  Use us-east-1 for the N. Virginia region
-config.IOT_THING_NAME = "<Your Thing Name>";
+config.IOT_BROKER_ENDPOINT = "a6c5tbrr0zx9e-ats.iot.us-east-2.amazonaws.com"; // also called the REST API endpoint
+config.IOT_BROKER_REGION = "us-east-2"; // eu-west-1 corresponds to the Ireland Region.  Use us-east-1 for the N. Virginia region (Using Ohio region)
+config.IOT_THING_NAME = "sdk-nodejs-6ff54d8d-5eec-4fc3-ae1a-86f19b20897c";
 
-const invocationName = "my home";
+// const invocationName = "my home";
+const invocationName = "alexis suites";
 
 // Session Attributes 
 //   Alexa will track attributes for you, by default only during the lifespan of your session.
@@ -19,25 +30,10 @@ const invocationName = "my home";
 
 function getMemoryAttributes() {   const memoryAttributes = {
        "history":[],
-
-        // The remaining attributes will be useful after DynamoDB persistence is configured
        "launchCount":0,
        "lastUseTimestamp":0,
-
        "lastSpeechOutput":{},
        "nextIntent":[]
-
-       // "favoriteColor":"",
-       // "name":"",
-       // "namePronounce":"",
-       // "email":"",
-       // "mobileNumber":"",
-       // "city":"",
-       // "state":"",
-       // "postcode":"",
-       // "birthday":"",
-       // "bookmark":0,
-       // "wishlist":[],
    };
    return memoryAttributes;
 };
@@ -211,26 +207,6 @@ const DeviceControl_Handler =  {
     },
 };
 
-const WhosThere_Handler =  {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
-        return request.type === 'IntentRequest' && request.intent.name === 'WhosThere' ;
-    },
-    handle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
-        const responseBuilder = handlerInput.responseBuilder;
-        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
-
-        let say = 'Hello from WhosThere. ';
-
-
-        return responseBuilder
-            .speak(say)
-            .reprompt('try again, ' + say)
-            .getResponse();
-    },
-};
-
 const LaunchRequest_Handler =  {
     canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
@@ -239,7 +215,7 @@ const LaunchRequest_Handler =  {
     handle(handlerInput) {
         const responseBuilder = handlerInput.responseBuilder;
 
-        let say = 'hello' + ' and welcome to ' + invocationName + ' ! Say help to hear some options.';
+        let say = 'hello' + ' and welcome to ' + invocationName;
 
         let skillTitle = capitalize(invocationName);
 
@@ -338,13 +314,6 @@ function capitalize(myString) {
 function randomElement(myArray) { 
     return(myArray[Math.floor(Math.random() * myArray.length)]); 
 } 
- 
-function stripSpeak(str) { 
-    return(str.replace('<speak>', '').replace('</speak>', '')); 
-} 
- 
- 
- 
  
 function getSlotValues(filledSlots) { 
     const slotValues = {}; 
@@ -512,33 +481,6 @@ function getPreviousSpeechOutput(attrs) {
  
 } 
  
-function timeDelta(t1, t2) { 
- 
-    const dt1 = new Date(t1); 
-    const dt2 = new Date(t2); 
-    const timeSpanMS = dt2.getTime() - dt1.getTime(); 
-    const span = { 
-        "timeSpanMIN": Math.floor(timeSpanMS / (1000 * 60 )), 
-        "timeSpanHR": Math.floor(timeSpanMS / (1000 * 60 * 60)), 
-        "timeSpanDAY": Math.floor(timeSpanMS / (1000 * 60 * 60 * 24)), 
-        "timeSpanDesc" : "" 
-    }; 
- 
- 
-    if (span.timeSpanHR < 2) { 
-        span.timeSpanDesc = span.timeSpanMIN + " minutes"; 
-    } else if (span.timeSpanDAY < 2) { 
-        span.timeSpanDesc = span.timeSpanHR + " hours"; 
-    } else { 
-        span.timeSpanDesc = span.timeSpanDAY + " days"; 
-    } 
- 
- 
-    return span; 
- 
-} 
- 
- 
 const InitMemoryAttributesInterceptor = { 
     process(handlerInput) { 
         let sessionAttributes = {}; 
@@ -610,89 +552,6 @@ const RequestHistoryInterceptor = {
  
 }; 
  
- 
- 
- 
-const RequestPersistenceInterceptor = { 
-    process(handlerInput) { 
- 
-        if(handlerInput.requestEnvelope.session['new']) { 
- 
-            return new Promise((resolve, reject) => { 
- 
-                handlerInput.attributesManager.getPersistentAttributes() 
- 
-                    .then((sessionAttributes) => { 
-                        sessionAttributes = sessionAttributes || {}; 
- 
- 
-                        sessionAttributes['launchCount'] += 1; 
- 
-                        handlerInput.attributesManager.setSessionAttributes(sessionAttributes); 
- 
-                        handlerInput.attributesManager.savePersistentAttributes() 
-                            .then(() => { 
-                                resolve(); 
-                            }) 
-                            .catch((err) => { 
-                                reject(err); 
-                            }); 
-                    }); 
- 
-            }); 
- 
-        } // end session['new'] 
-    } 
-}; 
- 
- 
-const ResponseRecordSpeechOutputInterceptor = { 
-    process(handlerInput, responseOutput) { 
- 
-        let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
-        let lastSpeechOutput = { 
-            "outputSpeech":responseOutput.outputSpeech.ssml, 
-            "reprompt":responseOutput.reprompt.outputSpeech.ssml 
-        }; 
- 
-        sessionAttributes['lastSpeechOutput'] = lastSpeechOutput; 
- 
-        handlerInput.attributesManager.setSessionAttributes(sessionAttributes); 
- 
-    } 
-}; 
- 
-const ResponsePersistenceInterceptor = { 
-    process(handlerInput, responseOutput) { 
- 
-        const ses = (typeof responseOutput.shouldEndSession == "undefined" ? true : responseOutput.shouldEndSession); 
- 
-        if(ses || handlerInput.requestEnvelope.request.type == 'SessionEndedRequest') { // skill was stopped or timed out 
- 
-            let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
- 
-            sessionAttributes['lastUseTimestamp'] = new Date(handlerInput.requestEnvelope.request.timestamp).getTime(); 
- 
-            handlerInput.attributesManager.setPersistentAttributes(sessionAttributes); 
- 
-            return new Promise((resolve, reject) => { 
-                handlerInput.attributesManager.savePersistentAttributes() 
-                    .then(() => { 
-                        resolve(); 
-                    }) 
-                    .catch((err) => { 
-                        reject(err); 
-                    }); 
- 
-            }); 
- 
-        } 
- 
-    } 
-}; 
- 
- 
- 
 // 4. Exports handler function and setup ===================================================
 const skillBuilder = Alexa.SkillBuilders.standard();
 exports.handler = skillBuilder
@@ -701,18 +560,12 @@ exports.handler = skillBuilder
         AMAZON_HelpIntent_Handler, 
         AMAZON_StopIntent_Handler, 
         DeviceControl_Handler, 
-        WhosThere_Handler, 
         LaunchRequest_Handler, 
         SessionEndedHandler
     )
     .addErrorHandlers(ErrorHandler)
     .addRequestInterceptors(InitMemoryAttributesInterceptor)
     .addRequestInterceptors(RequestHistoryInterceptor)
-
-   // .addResponseInterceptors(ResponseRecordSpeechOutputInterceptor)
-
- // .addRequestInterceptors(RequestPersistenceInterceptor)
- // .addResponseInterceptors(ResponsePersistenceInterceptor)
 
  // .withTableName("askMemorySkillTable")
  // .withAutoCreateTable(true)
@@ -726,7 +579,7 @@ exports.handler = skillBuilder
 const model = {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "my home",
+      "invocationName": "alexis suites",
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
@@ -761,16 +614,6 @@ const model = {
           ]
         },
         {
-          "name": "WhosThere",
-          "slots": [],
-          "samples": [
-            "Is there anyone at the door",
-            "Have we got visitors",
-            "Who's there",
-            "Who's at the door"
-          ]
-        },
-        {
           "name": "LaunchRequest"
         }
       ],
@@ -790,6 +633,24 @@ const model = {
                   "Light"
                 ]
               }
+            }, 
+            {
+                "name": 
+                {
+                    "value": "Fan"
+                }
+            }, 
+            {
+                "name": 
+                {
+                    "value": "Lock"
+                }
+            }, 
+            {
+                "name": 
+                {
+                    "value": "Curtain"
+                }
             }
           ]
         },
